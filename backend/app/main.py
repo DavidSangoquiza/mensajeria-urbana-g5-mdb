@@ -10,7 +10,7 @@ from fastapi import FastAPI
 
 from app import conexiones
 from app.errores import registrar_manejadores
-from app.rutas import auth, despacho, envios, sistema
+from app.rutas import auth, despacho, envios, repartidor, sistema
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -39,3 +39,4 @@ app.include_router(sistema.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(envios.router, prefix="/api")
 app.include_router(despacho.router, prefix="/api")
+app.include_router(repartidor.router, prefix="/api")

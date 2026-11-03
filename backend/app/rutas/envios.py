@@ -7,7 +7,8 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from app.conexiones import pg_pool
+from app import temporal
+from app.conexiones import mongo_db, pg_pool
 from app.errores import ErrorNegocio
 from app.estados import ENDPOINT_DEDICADO, validar_transicion
 from app.seguridad import requiere_rol, usuario_actual
@@ -107,13 +108,29 @@ def mis_envios(usuario: dict = Depends(requiere_rol("CLIENTE"))):
         return cx.execute(SQL_ENVIO + " WHERE e.cliente_id = %s ORDER BY e.creado_en DESC", (usuario["uid"],)).fetchall()
 
 
-@router.get("/envios/{codigo}", summary="Detalle del envío con historial completo")
+def leer_evidencia(evidencia_id: str | None) -> tuple[dict | None, str | None]:
+    """Evidencia desde MongoDB; si MongoDB cae, el detalle se muestra igual con un aviso."""
+    if not evidencia_id:
+        return None, None
+    try:
+        return mongo_db["evidencias_entrega"].find_one({"_id": evidencia_id}), None
+    except Exception:
+        return None, "MongoDB no disponible: la entrega consta en PostgreSQL, la evidencia no se puede mostrar ahora"
+
+
+@router.get("/envios/{codigo}", summary="Detalle del envío: PostgreSQL + evidencia (MongoDB) + posición (Redis)")
 def detalle_envio(codigo: str, usuario: dict = Depends(usuario_actual)):
     with pg_pool.connection() as cx:
         envio = obtener_envio(cx, codigo.upper())
         verificar_acceso(cx, envio, usuario)
-        return {"envio": envio, "historial": historial(cx, envio["id"]),
-                "fuentes": {"envio": "postgresql", "historial": "postgresql"}}
+        hist = historial(cx, envio["id"])
+    evidencia, aviso = leer_evidencia(envio["evidencia_id"])
+    posicion = (temporal.leer_posicion_segura(envio["repartidor_id"])
+                if envio["repartidor_id"] and envio["estado"] in ("ASIGNADO", "RETIRADO", "EN_TRANSITO", "INCIDENCIA")
+                else None)
+    return {"envio": envio, "historial": hist, "evidencia": evidencia, "posicion_repartidor": posicion,
+            "avisos": [aviso] if aviso else [],
+            "fuentes": {"envio": "postgresql", "historial": "postgresql", "evidencia": "mongodb", "posicion": "redis"}}
 
 
 @router.get("/seguimiento/{codigo}", summary="Seguimiento público por código (sin datos sensibles)")
@@ -123,10 +140,14 @@ def seguimiento(codigo: str):
         linea = [{"secuencia": h["secuencia"], "tipo": h["tipo"], "estado": h["estado_nuevo"],
                   "rol": h["actor_rol"], "observacion": h["detalle"].get("observacion"), "fecha": h["ocurrido_en"]}
                  for h in historial(cx, e["id"])]
+    evidencia, aviso = leer_evidencia(e["evidencia_id"])
+    resumen = ({"recibido_por": evidencia["receptor"]["nombre"], "registrada_en": evidencia["registrada_en"],
+                "estado": evidencia["estado"]} if evidencia else None)
     return {"codigo": e["codigo"], "estado": e["estado"], "tipo_servicio": e["tipo_servicio"],
             "zona_origen": e["zona_origen"], "zona_destino": e["zona_destino"],
             "destinatario": e["destinatario_nombre"].split()[0],      # solo el primer nombre
-            "linea_de_tiempo": linea, "fuente": "postgresql"}
+            "linea_de_tiempo": linea, "prueba_de_entrega": resumen, "avisos": [aviso] if aviso else [],
+            "fuente": "postgresql (estado e historial) + mongodb (evidencia)"}
 
 
 # ---------------------------------------------------------------- cambio de estado
