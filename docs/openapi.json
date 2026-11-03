@@ -1,0 +1,2270 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API Mensajería Urbana · Grupo 5",
+    "description": "Persistencia políglota: PostgreSQL (oficial), MongoDB (evidencias y búsqueda), Redis (estado temporal).",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Salud de la API y sus dependencias",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Iniciar sesión y obtener token",
+        "operationId": "login_api_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/yo": {
+      "get": {
+        "tags": [
+          "Autenticación"
+        ],
+        "summary": "Datos del usuario de la sesión",
+        "operationId": "yo_api_auth_yo_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/catalogos": {
+      "get": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Zonas y tipos de servicio activos (público)",
+        "operationId": "catalogos_api_catalogos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/envios": {
+      "post": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Registrar envío (Idempotency-Key obligatoria)",
+        "operationId": "crear_envio_api_envios_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "maxLength": 80,
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvioEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Consulta operativa y sincronización"
+        ],
+        "summary": "Buscar envíos por código, estado, zona, destinatario y fechas",
+        "operationId": "buscar_api_envios_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Codigo"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "CREADO",
+                    "ASIGNADO",
+                    "RETIRADO",
+                    "EN_TRANSITO",
+                    "INCIDENCIA",
+                    "ENTREGADO",
+                    "CANCELADO"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "zona",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 10
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Código de zona de destino",
+              "title": "Zona"
+            },
+            "description": "Código de zona de destino"
+          },
+          {
+            "name": "destinatario",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Destinatario"
+            }
+          },
+          {
+            "name": "desde",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde"
+            }
+          },
+          {
+            "name": "hasta",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta"
+            }
+          },
+          {
+            "name": "fuente",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "auto",
+                "mongodb",
+                "postgresql"
+              ],
+              "type": "string",
+              "default": "auto",
+              "title": "Fuente"
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/envios/mios": {
+      "get": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Envíos del cliente que inició sesión",
+        "operationId": "mis_envios_api_envios_mios_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/envios/{codigo}": {
+      "get": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Detalle del envío: PostgreSQL + evidencia (MongoDB) + posición (Redis)",
+        "operationId": "detalle_envio_api_envios__codigo__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/seguimiento/{codigo}": {
+      "get": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Seguimiento público por código (sin datos sensibles)",
+        "operationId": "seguimiento_api_seguimiento__codigo__get",
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/envios/{codigo}/estado": {
+      "patch": {
+        "tags": [
+          "Envíos y seguimiento"
+        ],
+        "summary": "Cambiar estado según la máquina de estados (idempotente)",
+        "operationId": "cambiar_estado_api_envios__codigo__estado_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CambioEstado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/asignaciones": {
+      "post": {
+        "tags": [
+          "Despacho y asignaciones"
+        ],
+        "summary": "Asignar un envío CREADO a un repartidor (controla capacidad)",
+        "operationId": "asignar_api_asignaciones_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsignarEntrada"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/asignaciones/{codigo}/reasignar": {
+      "post": {
+        "tags": [
+          "Despacho y asignaciones"
+        ],
+        "summary": "Cambiar de repartidor (ASIGNADO o INCIDENCIA)",
+        "operationId": "reasignar_api_asignaciones__codigo__reasignar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasignarEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/asignaciones/{codigo}/liberar": {
+      "post": {
+        "tags": [
+          "Despacho y asignaciones"
+        ],
+        "summary": "Quitar el repartidor: el envío vuelve a CREADO",
+        "operationId": "liberar_api_asignaciones__codigo__liberar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiberarEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/despacho/repartidores": {
+      "get": {
+        "tags": [
+          "Despacho y asignaciones"
+        ],
+        "summary": "Repartidores con su carga y capacidad (calculadas en PostgreSQL)",
+        "operationId": "repartidores_api_despacho_repartidores_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/repartidor/tareas": {
+      "get": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "Envíos activos asignados al repartidor y acciones permitidas",
+        "operationId": "tareas_api_repartidor_tareas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/repartidor/tareas/{codigo}/aceptar": {
+      "post": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "El repartidor acepta la asignación",
+        "operationId": "aceptar_api_repartidor_tareas__codigo__aceptar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventoSimple"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/envios/{codigo}/entrega": {
+      "post": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "Registrar entrega con evidencia (MongoDB + PostgreSQL)",
+        "operationId": "entregar_api_envios__codigo__entrega_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EntregaEntrada"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/repartidor/ubicacion": {
+      "post": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "Reportar posición simulada (Redis con TTL)",
+        "operationId": "reportar_ubicacion_api_repartidor_ubicacion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Posicion"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/repartidor/desconectar": {
+      "post": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "Marcar la posición como no vigente",
+        "operationId": "desconectar_api_repartidor_desconectar_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/repartidores/estado-temporal": {
+      "get": {
+        "tags": [
+          "Repartidor y entregas"
+        ],
+        "summary": "Posición vigente o no vigente de cada repartidor",
+        "operationId": "estado_temporal_api_repartidores_estado_temporal_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/envios/{codigo}/destinatario": {
+      "patch": {
+        "tags": [
+          "Consulta operativa y sincronización"
+        ],
+        "summary": "Corregir datos de destino (se propaga a la búsqueda)",
+        "operationId": "corregir_destino_api_envios__codigo__destinatario_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "codigo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Codigo"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorreccionDestino"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/sync/estado": {
+      "get": {
+        "tags": [
+          "Consulta operativa y sincronización"
+        ],
+        "summary": "Pendientes, retraso, errores y latido del sincronizador",
+        "operationId": "estado_sync_api_admin_sync_estado_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/sync/reconstruir": {
+      "post": {
+        "tags": [
+          "Consulta operativa y sincronización"
+        ],
+        "summary": "Regenerar toda la proyección desde PostgreSQL",
+        "operationId": "reconstruir_api_admin_sync_reconstruir_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/reconciliacion": {
+      "get": {
+        "tags": [
+          "Consulta operativa y sincronización"
+        ],
+        "summary": "Verificar que estado vigente e historial no se contradicen",
+        "operationId": "reconciliacion_api_admin_reconciliacion_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/zonas": {
+      "get": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Listar Zonas",
+        "operationId": "listar_zonas_api_admin_zonas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Crear Zona",
+        "operationId": "crear_zona_api_admin_zonas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZonaNueva"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/zonas/{zona_id}": {
+      "patch": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Cambiar Zona",
+        "operationId": "cambiar_zona_api_admin_zonas__zona_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "zona_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Zona Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ZonaCambio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/tipos-servicio": {
+      "get": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Listar Tipos",
+        "operationId": "listar_tipos_api_admin_tipos_servicio_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Crear Tipo",
+        "operationId": "crear_tipo_api_admin_tipos_servicio_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoNuevo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/tipos-servicio/{tipo_id}": {
+      "patch": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Cambiar Tipo",
+        "operationId": "cambiar_tipo_api_admin_tipos_servicio__tipo_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tipo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tipo Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TipoCambio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/repartidores": {
+      "post": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Crear Repartidor",
+        "operationId": "crear_repartidor_api_admin_repartidores_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepartidorNuevo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/repartidores/{repartidor_id}": {
+      "patch": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Cambiar Repartidor",
+        "operationId": "cambiar_repartidor_api_admin_repartidores__repartidor_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "repartidor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Repartidor Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepartidorCambio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/clientes": {
+      "get": {
+        "tags": [
+          "Administración"
+        ],
+        "summary": "Listar Clientes",
+        "operationId": "listar_clientes_api_admin_clientes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsignarEntrada": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 20,
+            "title": "Codigo",
+            "examples": [
+              "MU-DEMO-0001"
+            ]
+          },
+          "repartidor_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Repartidor Id",
+            "examples": [
+              4
+            ]
+          },
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "repartidor_id",
+          "evento_id"
+        ],
+        "title": "AsignarEntrada"
+      },
+      "CambioEstado": {
+        "properties": {
+          "estado_nuevo": {
+            "type": "string",
+            "enum": [
+              "CREADO",
+              "ASIGNADO",
+              "RETIRADO",
+              "EN_TRANSITO",
+              "INCIDENCIA",
+              "ENTREGADO",
+              "CANCELADO"
+            ],
+            "title": "Estado Nuevo"
+          },
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id",
+            "description": "UUID generado por el cliente; reintentar con el mismo no duplica"
+          },
+          "observacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacion"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.2,
+                "minimum": -0.5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": -78.2,
+                "minimum": -78.8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado_nuevo",
+          "evento_id"
+        ],
+        "title": "CambioEstado"
+      },
+      "CorreccionDestino": {
+        "properties": {
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          },
+          "destinatario_nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Destinatario Nombre"
+          },
+          "destinatario_telefono": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0\\d{9}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destinatario Telefono"
+          },
+          "destino_direccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destino Direccion"
+          },
+          "zona_destino": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zona Destino"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evento_id",
+          "destinatario_nombre"
+        ],
+        "title": "CorreccionDestino"
+      },
+      "EntregaEntrada": {
+        "properties": {
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          },
+          "receptor": {
+            "$ref": "#/components/schemas/Receptor"
+          },
+          "foto": {
+            "$ref": "#/components/schemas/Foto"
+          },
+          "observacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacion"
+          },
+          "extras": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            "type": "object",
+            "maxProperties": 10,
+            "title": "Extras",
+            "description": "Atributos variables (firma simulada, bultos, etc.)"
+          },
+          "lat": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.2,
+                "minimum": -0.5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lat"
+          },
+          "lng": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": -78.2,
+                "minimum": -78.8
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lng"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evento_id",
+          "receptor",
+          "foto"
+        ],
+        "title": "EntregaEntrada"
+      },
+      "EnvioEntrada": {
+        "properties": {
+          "tipo_servicio": {
+            "type": "string",
+            "maxLength": 15,
+            "title": "Tipo Servicio",
+            "examples": [
+              "ESTANDAR"
+            ]
+          },
+          "zona_origen": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Zona Origen",
+            "examples": [
+              "NOR"
+            ]
+          },
+          "zona_destino": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Zona Destino",
+            "examples": [
+              "SUR"
+            ]
+          },
+          "origen_direccion": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 5,
+            "title": "Origen Direccion",
+            "examples": [
+              "Av. Ficticia N10-100"
+            ]
+          },
+          "origen_lat": {
+            "type": "number",
+            "maximum": 0.2,
+            "minimum": -0.5,
+            "title": "Origen Lat"
+          },
+          "origen_lng": {
+            "type": "number",
+            "maximum": -78.2,
+            "minimum": -78.8,
+            "title": "Origen Lng"
+          },
+          "destino_direccion": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 5,
+            "title": "Destino Direccion",
+            "examples": [
+              "Calle Ejemplo S5-12"
+            ]
+          },
+          "destino_lat": {
+            "type": "number",
+            "maximum": 0.2,
+            "minimum": -0.5,
+            "title": "Destino Lat"
+          },
+          "destino_lng": {
+            "type": "number",
+            "maximum": -78.2,
+            "minimum": -78.8,
+            "title": "Destino Lng"
+          },
+          "remitente_nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Remitente Nombre"
+          },
+          "destinatario_nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Destinatario Nombre"
+          },
+          "destinatario_telefono": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^0\\d{9}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destinatario Telefono",
+            "examples": [
+              "0991234567"
+            ]
+          },
+          "peso_kg": {
+            "type": "number",
+            "maximum": 50.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Peso Kg"
+          },
+          "cliente_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cliente Id",
+            "description": "Solo operador/admin: cliente para quien se registra"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo_servicio",
+          "zona_origen",
+          "zona_destino",
+          "origen_direccion",
+          "origen_lat",
+          "origen_lng",
+          "destino_direccion",
+          "destino_lat",
+          "destino_lng",
+          "remitente_nombre",
+          "destinatario_nombre",
+          "peso_kg"
+        ],
+        "title": "EnvioEntrada"
+      },
+      "EventoSimple": {
+        "properties": {
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evento_id"
+        ],
+        "title": "EventoSimple"
+      },
+      "Foto": {
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "url",
+              "referencia_archivo"
+            ],
+            "title": "Tipo",
+            "default": "referencia_archivo"
+          },
+          "valor": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 3,
+            "title": "Valor",
+            "examples": [
+              "foto_entrega_001.jpg"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "valor"
+        ],
+        "title": "Foto"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LiberarEntrada": {
+        "properties": {
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          },
+          "observacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "evento_id"
+        ],
+        "title": "LiberarEntrada"
+      },
+      "LoginEntrada": {
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 3,
+            "title": "Usuario",
+            "examples": [
+              "operador1"
+            ]
+          },
+          "clave": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Clave",
+            "examples": [
+              "Operador123!"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "usuario",
+          "clave"
+        ],
+        "title": "LoginEntrada"
+      },
+      "Posicion": {
+        "properties": {
+          "lat": {
+            "type": "number",
+            "maximum": 0.2,
+            "minimum": -0.5,
+            "title": "Lat",
+            "examples": [
+              -0.2
+            ]
+          },
+          "lng": {
+            "type": "number",
+            "maximum": -78.2,
+            "minimum": -78.8,
+            "title": "Lng",
+            "examples": [
+              -78.5
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "lat",
+          "lng"
+        ],
+        "title": "Posicion"
+      },
+      "ReasignarEntrada": {
+        "properties": {
+          "repartidor_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Repartidor Id"
+          },
+          "evento_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Evento Id"
+          },
+          "observacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "repartidor_id",
+          "evento_id"
+        ],
+        "title": "ReasignarEntrada"
+      },
+      "Receptor": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Nombre",
+            "examples": [
+              "Elena Destino Cuatro"
+            ]
+          },
+          "relacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 40
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Relacion",
+            "examples": [
+              "Titular"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre"
+        ],
+        "title": "Receptor"
+      },
+      "RepartidorCambio": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "zona": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zona"
+          },
+          "vehiculo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "MOTO",
+                  "BICICLETA",
+                  "AUTO",
+                  "A_PIE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehiculo"
+          },
+          "capacidad_max": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacidad Max"
+          },
+          "activo": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activo"
+          }
+        },
+        "type": "object",
+        "title": "RepartidorCambio"
+      },
+      "RepartidorNuevo": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Nombre"
+          },
+          "zona": {
+            "type": "string",
+            "maxLength": 10,
+            "title": "Zona",
+            "examples": [
+              "NOR"
+            ]
+          },
+          "vehiculo": {
+            "type": "string",
+            "enum": [
+              "MOTO",
+              "BICICLETA",
+              "AUTO",
+              "A_PIE"
+            ],
+            "title": "Vehiculo",
+            "default": "MOTO"
+          },
+          "capacidad_max": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Capacidad Max"
+          },
+          "usuario": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 3,
+            "pattern": "^[a-z0-9_]+$",
+            "title": "Usuario"
+          },
+          "clave": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 8,
+            "title": "Clave"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "zona",
+          "capacidad_max",
+          "usuario",
+          "clave"
+        ],
+        "title": "RepartidorNuevo"
+      },
+      "TipoCambio": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "horas_objetivo": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 720.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Horas Objetivo"
+          },
+          "activo": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activo"
+          }
+        },
+        "type": "object",
+        "title": "TipoCambio"
+      },
+      "TipoNuevo": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 15,
+            "minLength": 3,
+            "pattern": "^[A-Za-z_]+$",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 3,
+            "title": "Nombre"
+          },
+          "horas_objetivo": {
+            "type": "integer",
+            "maximum": 720.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Horas Objetivo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "horas_objetivo"
+        ],
+        "title": "TipoNuevo"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "ZonaCambio": {
+        "properties": {
+          "nombre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombre"
+          },
+          "activa": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Activa"
+          }
+        },
+        "type": "object",
+        "title": "ZonaCambio"
+      },
+      "ZonaNueva": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 2,
+            "pattern": "^[A-Za-z]+$",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 60,
+            "minLength": 3,
+            "title": "Nombre"
+          }
+        },
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre"
+        ],
+        "title": "ZonaNueva"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

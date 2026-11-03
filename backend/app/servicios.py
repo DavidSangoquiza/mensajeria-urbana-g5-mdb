@@ -46,8 +46,9 @@ def asignacion_activa(cx, envio_id: int) -> dict | None:
     return cx.execute("SELECT * FROM asignaciones WHERE envio_id = %s AND activa", (envio_id,)).fetchone()
 
 
-def verificar_acceso(cx, envio: dict, usuario: dict):
-    """Operador/admin ven todo; el cliente, lo suyo; el repartidor, lo que tiene asignado."""
+def verificar_acceso(cx, envio: dict, usuario: dict, solo_lectura: bool = False):
+    """Operador/admin ven todo; el cliente, lo suyo; el repartidor, lo que tiene asignado.
+    Para solo lectura, el repartidor también ve los envíos que tuvo a cargo (ya entregados)."""
     rol = usuario["rol"]
     if rol in ("OPERADOR", "ADMIN"):
         return
@@ -56,6 +57,9 @@ def verificar_acceso(cx, envio: dict, usuario: dict):
     if rol == "REPARTIDOR":
         a = asignacion_activa(cx, envio["id"])
         if a and a["repartidor_id"] == usuario["rid"]:
+            return
+        if solo_lectura and cx.execute("SELECT 1 FROM asignaciones WHERE envio_id = %s AND repartidor_id = %s",
+                                       (envio["id"], usuario["rid"])).fetchone():
             return
     raise ErrorNegocio(403, "SIN_ACCESO", "No tiene acceso a este envío")
 

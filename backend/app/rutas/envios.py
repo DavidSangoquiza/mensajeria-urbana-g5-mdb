@@ -122,7 +122,7 @@ def leer_evidencia(evidencia_id: str | None) -> tuple[dict | None, str | None]:
 def detalle_envio(codigo: str, usuario: dict = Depends(usuario_actual)):
     with pg_pool.connection() as cx:
         envio = obtener_envio(cx, codigo.upper())
-        verificar_acceso(cx, envio, usuario)
+        verificar_acceso(cx, envio, usuario, solo_lectura=True)
         hist = historial(cx, envio["id"])
     evidencia, aviso = leer_evidencia(envio["evidencia_id"])
     posicion = (temporal.leer_posicion_segura(envio["repartidor_id"])

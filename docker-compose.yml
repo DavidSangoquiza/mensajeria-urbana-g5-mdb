@@ -83,6 +83,16 @@ services:
     networks: [red_interna]
     restart: unless-stopped
 
+  web:
+    build: ./frontend
+    container_name: mu-web
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    networks: [red_interna]
+    restart: unless-stopped
+
 networks:
   red_interna:
 
