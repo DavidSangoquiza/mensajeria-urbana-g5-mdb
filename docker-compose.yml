@@ -68,6 +68,21 @@ services:
     networks: [red_interna]
     restart: unless-stopped
 
+  sincronizador:
+    build: ./backend
+    container_name: mu-sincronizador
+    command: ["python", "-m", "app.sincronizador"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      MONGO_URL: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
+      MONGO_DB: mensajeria
+      SYNC_INTERVALO_SEG: ${SYNC_INTERVALO_SEG}
+    depends_on:
+      postgres: { condition: service_healthy }
+      mongo:    { condition: service_healthy }
+    networks: [red_interna]
+    restart: unless-stopped
+
 networks:
   red_interna:
 
