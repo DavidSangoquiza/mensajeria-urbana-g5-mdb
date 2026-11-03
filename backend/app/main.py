@@ -10,7 +10,7 @@ from fastapi import FastAPI
 
 from app import conexiones
 from app.errores import registrar_manejadores
-from app.rutas import auth, sistema
+from app.rutas import auth, envios, sistema
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -37,3 +37,4 @@ app.add_api_route("/health", sistema.health, methods=["GET"], include_in_schema=
 
 app.include_router(sistema.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
+app.include_router(envios.router, prefix="/api")

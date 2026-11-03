@@ -16,7 +16,7 @@ pg_pool = ConnectionPool(
     min_size=1,
     max_size=10,
     timeout=5,
-    kwargs={"row_factory": dict_row},
+    kwargs={"row_factory": dict_row, "autocommit": True},   # transacciones explícitas con cx.transaction()
     open=False,
 )
 
